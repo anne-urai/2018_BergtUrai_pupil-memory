@@ -1,4 +1,4 @@
-function readInData_img
+function readInData_img(removeLuminance)
 
 global mypath
 addpath('~/Documents/fieldtrip/');
@@ -18,7 +18,7 @@ fsample     = 50; % massively speeds up deconvolution
 for sj = subjects
     
     if exist(sprintf('%s/visual/P%02d_img.csv', mypath, sj), 'file'),
-        continue;
+       % continue;
     end
     
     %% ================================= %
@@ -55,8 +55,11 @@ for sj = subjects
             pupil.dat(:, 4) = pupil.dat(:, 1);
         else
             % ESTIMATE IRF OF THE LIGHT RESPONSE USING DECONVOLUTION
-            %  pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
-            pupil.dat(:, 4) = pupil.dat(:, 1);
+            if removeLuminance,
+                pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
+            else
+                pupil.dat(:, 4) = pupil.dat(:, 1);
+            end
             
         end
         pupil.label{4}  = 'cleanpupil';
@@ -137,7 +140,11 @@ for sj = subjects
             pupil.dat(:, 4) = pupil.dat(:, 1);
         else
             % ESTIMATE IRF OF THE LIGHT RESPONSE USING DECONVOLUTION
-            pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
+            if removeLuminance,
+                pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
+            else
+                pupil.dat(:, 4) = pupil.dat(:, 1);
+            end
         end
         pupil.label{4}  = 'cleanpupil';
         
@@ -275,7 +282,11 @@ end
 alltab(cellfun(@isempty, alltab))   = [];
 fulltab = cat(1, alltab{:});
 fulltab = fulltab(:, [end 1:end-1]);
-writetable(fulltab, sprintf('%s/visual/alldata_img_raw.csv', mypath));
+if removeLuminance,
+    writetable(fulltab, sprintf('%s/visual/alldata_img_luminanceRemoved.csv', mypath));
+else
+    writetable(fulltab, sprintf('%s/visual/alldata_img_raw.csv', mypath));
+end
 
 if keepPupilTimecourses,
     % separate out trialinfo and timecourses
@@ -307,8 +318,12 @@ if keepPupilTimecourses,
     % save
     dat     = fulltab;
     pupil   = fullpupil;
-    savefast(sprintf('%s/visual/alldata_img_raw.mat', mypath), 'dat', 'pupil');
     
+    if removeLuminance,
+        savefast(sprintf('%s/visual/alldata_img_luminanceRemoved.mat', mypath), 'dat', 'pupil');
+    else
+        savefast(sprintf('%s/visual/alldata_img_raw.mat', mypath), 'dat', 'pupil');
+    end
 end
 
 end

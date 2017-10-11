@@ -4,7 +4,7 @@ function data = processPupilData(thisfile, newfsample)
 % Anne Urai, 2017
 % anne.urai@gmail.com
 
-close all; clc;
+close all; 
 
 % determine the timing
 prestim     = 3;
