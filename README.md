@@ -15,3 +15,4 @@ In a0_overview.m, change mypath to the place where all the data are stored. This
 ├── visual                  # output of visual csv files
 ├── pupil                   # all converted BeGaze text files, plus output of pupil preprocessing
 ├── figures                 # folder for results figures
+```
