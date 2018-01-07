@@ -1,17 +1,11 @@
 function pupilOverview_aud
-
 global mypath;
 
-set(groot, 'defaultaxesfontsize', 5, 'defaultaxestitlefontsizemultiplier', 1, ...
-    'defaultaxestitlefontweight', 'normal', ...
-    'defaultfigurerenderermode', 'manual', 'defaultfigurerenderer', 'painters');
-
-
-for baselineCorrect = [0 1],
-    close all;
-    load(sprintf('%s/auditory/alldata_aud.mat', mypath), 'dat', 'pupil');
+for baselineCorrect = [1],
+    load(sprintf('%s/data/alldata_aud.mat', mypath), 'dat', 'pupil');
     pupil.time = nanmean(pupil.time);
-    colors = viridis(3);
+    rdgy = cbrewer('div', 'RdBu', 15); rdgy = rdgy(2:end-1, :);
+    piyg = cbrewer('div', 'PiYG', 10);
     
     % CORRECT SINGLE-TRIAL BASELINE
     if baselineCorrect,
@@ -22,87 +16,57 @@ for baselineCorrect = [0 1],
     % Hypothesis 1: The pupil dilates more when being confronted with emotional (vs. neutral) material.
     % ========================================================= %
     
-    % 1. Overall response
-    subplot(441); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc, dat, {'subj_idx'});
-    title('Encoding');
-    
     % 2. EMOTIONAL VS NEUTRAL PICTURES
-    subplot(442); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc, dat, {'subj_idx', 'emotional'});
-    betterLegend(h, {'Neutral', 'Emotional'});
-    title('Encoding');
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc, dat, {'subj_idx', 'emotional'}, rdgy([end 2], :));
+    title('Memory encoding: words');
+    lh = betterLegend(h, {'Neutral', 'Emotional'}, 'word');
+    lh.Visible = 'off';
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v2.pdf', mypath, baselineCorrect));
     
     % ========================================================= %
     % Hypothesis 3: Material with more (vs. less) pupil dilation at encoding is being better remembered.
     % first, for neutral stimuli
     % ========================================================= %
     
-    subplot(445); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0, :), ...
-        dat(dat.emotional == 0, :), {'subj_idx', 'recalled_d1'});
-    betterLegend(h, {'Forgotten', 'Recalled'});
-    title('Recall, day 1 - neutral');
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc, dat, ...
+        {'subj_idx', 'emotional', 'recalled_d1'}, rdgy([end-4 4 end 1], :), rdgy([end 1], :));
+    %title('Recall, day 1');
+    %title('Memory encoding: words');
     
-    subplot(446); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0, :), ...
-        dat(dat.emotional == 0, :), {'subj_idx', 'recalled_d2'});
-    betterLegend(h, {'Forgotten', 'Recalled'});
-    title('Recall, day 2 - neutral');
+    betterLegend(h, {'Neutral, forgotten', 'Emotional, forgotten', 'Neutral, recalled', 'Emotional, recalled'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v3.pdf', mypath, baselineCorrect));
     
-    subplot(447); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0, :), ...
-        dat(dat.emotional == 0, :), {'subj_idx', 'recog_oldnew'});
-    betterLegend(h, {'Miss', 'Hit'});
-    title('Recognition, day 2 - neutral');
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc, ...
+        dat, {'subj_idx', 'emotional', 'recalled_d2'}, rdgy([end-4 4 end 1], :), rdgy([end 1], :));
+    %title('Recall, day 2');
+    betterLegend(h, {'Neutral, forgotten', 'Emotional, forgotten', 'Neutral, recalled', 'Emotional, recalled'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v4.pdf', mypath, baselineCorrect));
     
-    subplot(448); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0, :), ...
-        dat(dat.emotional == 0, :), {'subj_idx', 'confidence_recog'});
-    betterLegend(h, {'0', '1', '2', '3'});
-    title('Recognition confidence, day 2 - neutral');
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc, ...
+        dat, {'subj_idx', 'emotional', 'recog_oldnew'}, rdgy([end-4 4 end 1], :), rdgy([end 1], :));
+    %title('Recognition, day 2');
+    %title('Memory encoding: words');
+    betterLegend(h, {'Neutral, miss', 'Emotional, miss', 'Neutral, hit', 'Emotional, hit'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v5.pdf', mypath, baselineCorrect));
     
-    % ========================================================= %
-    % Hypothesis 3: Material with more (vs. less) pupil dilation at encoding is being better remembered.
-    % first, for neutral stimuli
-    % ========================================================= %
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0,:), ...
+        dat(dat.emotional == 0, :), {'subj_idx', 'confidence_recog'}, rdgy(8:end, :));
+    %title('Recognition confidence, day 2 - neutral');
+    betterLegend(h, {'0', '1', '2', '3'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v6.pdf', mypath, baselineCorrect));
     
-    subplot(449); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 1, :), ...
-        dat(dat.emotional == 1, :), {'subj_idx', 'recalled_d1'});
-    betterLegend(h, {'Forgotten', 'Recalled'});
-    title('Recall, day 1 - emotional');
-    xlabel('Time from word onset (s)');
-    
-    subplot(4,4,10); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 1, :), ...
-        dat(dat.emotional == 1, :), {'subj_idx', 'recalled_d2'});
-    betterLegend(h, {'Forgotten', 'Recalled'});
-    title('Recall, day 2 - emotional');
-    xlabel('Time from word onset (s)');
-    
-    subplot(4,4,11); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 1, :), ...
-        dat(dat.emotional == 1, :), {'subj_idx', 'recog_oldnew'});
-    betterLegend(h, {'Miss', 'Hit'});
-    title('Recognition, day 2 - emotional');
-    xlabel('Time from word onset (s)');
-    
-    subplot(4,4,12); hold on;
-    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 1, :), ...
-        dat(dat.emotional == 1, :), {'subj_idx', 'confidence_recog'});
-    betterLegend(h, {'0', '1', '2', '3'});
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0,:), ...
+        dat(dat.emotional == 0,:), {'subj_idx', 'emotional', 'confidence_recog'}, rdgy(4:-1:1, :));
     title('Recognition confidence, day 2 - emotional');
-    xlabel('Time from word onset (s)');
+    betterLegend(h, {'0', '1', '2', '3'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v6.pdf', mypath, baselineCorrect));
     
-    switch baselineCorrect
-        case 0
-            suplabel('Pupil dilation during encoding, not baseline corrected', 'x');
-            print(gcf, '-dpdf', sprintf('%s/figures/words.pdf', mypath));
-        case 1
-            suplabel('Pupil dilation during encoding, baseline corrected', 'x');
-            print(gcf, '-dpdf', sprintf('%s/figures/words_baselinecorrected.pdf', mypath));
-    end
 end
 
 end

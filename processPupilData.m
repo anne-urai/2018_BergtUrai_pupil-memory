@@ -1,14 +1,10 @@
-function data = processPupilData(thisfile, newfsample)
+function data = processPupilData(thisfile, newfsample, prestim, poststim)
 
 % processing script to analyze SMI pupil data
 % Anne Urai, 2017
 % anne.urai@gmail.com
 
-close all; 
-
-% determine the timing
-prestim     = 3;
-poststim    = 3;
+close all;
 
 % ============================================ %
 % let the user select a file
@@ -22,7 +18,7 @@ if ~exist('thisfile', 'var'),
 else
     FileNames{1} = thisfile;
 end
-    
+
 for fileIdx = 1:length(FileNames),
     
     clearvars -except FileNames fileIdx PathName prestim poststim newfsample
@@ -44,7 +40,7 @@ for fileIdx = 1:length(FileNames),
     data.dat(:, 9) = mean(data.dat(:, 5:6), 2);
     data.dat = data.dat(:, 7:9);
     data.label = {'pupil', 'gazex', 'gazey'};
-
+    
     % ============================================ %
     % remove any data before the first and after the last stim
     % ============================================ %
@@ -63,6 +59,34 @@ for fileIdx = 1:length(FileNames),
     data.dat(sample:end, :) = NaN;
     
     % ============================================ %
+    % DOWNSAMPLE
+    % ============================================ %
+    
+    % resample onto new, equally spaced time axis
+    [y, ty] = resample(data.dat, data.time, newfsample, 'pchip');
+    
+    % make the new timecourse NaN at the beginning and end as well
+    goodtimes = data.time(~isnan(data.dat(:, 1)));
+    goodtimes = [min(goodtimes) max(goodtimes)];
+    y(ty < goodtimes(1), :) = NaN;
+    y(ty > goodtimes(2), :) = NaN;
+    
+    % resample timepoints: blinkoffset, saccoffset, stimonset
+    data.blinkoffset    = resample_points(data.blinkoffset, data.time, ty);
+    data.saccoffset     = resample_points(data.saccoffset, data.time, ty);
+    
+    % find the onset of stimuli
+    trialIdx            = find(~cellfun(@isempty, regexp([event(:).value], 'trial')));
+    ev                  = [event(trialIdx).time]; % in seconds
+    data.stimonset      = dsearchn(ty, ev');
+    
+    % put into the new data structure
+    data.time           = ty;
+    data.dat            = y;
+    data.fsample        = newfsample;
+    data.trialtime      = -prestim:1/data.fsample:poststim;
+    
+    % ============================================ %
     % zscore the pupil channels across the whole interval
     % ============================================ %
     
@@ -76,7 +100,7 @@ for fileIdx = 1:length(FileNames),
     
     trialIdx = find(~cellfun(@isempty, regexp([event(:).value], 'trial')));
     data.trialtime = -prestim:1/data.fsample:poststim;
-
+    
     for t = 1:length(trialIdx),
         % find the sample that marks the beginning of this trial
         [~, sample] = min(abs(data.time - event(trialIdx(t)).time ));
@@ -101,7 +125,7 @@ for fileIdx = 1:length(FileNames),
     plot(data.time, data.dat(:, 1)); xlabel('Time (s)');
     ylabel('Pupil (z)');
     title(FileName, 'interpreter', 'none'); axis tight; box off;
-    xlim(data.time([1 end]));
+    axis tight; %xlim(data.time([1 end]));
     
     subplot(3,3,4); hold on;
     plot(data.trialtime, squeeze(mean(data.trial(:, :))));
@@ -109,41 +133,7 @@ for fileIdx = 1:length(FileNames),
     ylabel('Pupil response (z)');
     box off; axis tight; set(gca, 'xtick', -prestim:1:poststim);
     plot([0 0], get(gca, 'ylim'), 'color', [0.5 0.5 0.5]);
-    
-    print(gcf, '-dpdf', regexprep(FileName, '.txt', '_pupil.pdf'));
-    
-    % ============================================ %
-    % WRITE TO CSV
-    % ============================================ %
-    
-    outp.bl             = squeeze(nanmean(data.trial(:, find(data.trialtime < 0)), 3));
-    outp.dilation       = squeeze(nanmean(data.trial(:, find(data.trialtime > 0)), 3)) - outp.bl;
-    outp.trial_num      = cellfun(@str2double, regexp([event(trialIdx).value], '\d*', 'match'))';
-    
-    % save
-    outp = struct2table(outp);
-    writetable(outp, regexprep(FileName, '.txt', '_pupil.csv'));
-    
-    % ============================================ %
-    % DOWNSAMPLE
-    % ============================================ %
-    
-    if newfsample ~= data.fsample,
         
-        data.time       = resample(data.time, newfsample, data.fsample);
-        data.dat        = resample(data.dat, newfsample, data.fsample);
-        data.trialtime  = min(data.trialtime) : 1/ newfsample : max(data.trialtime);
-        data.trial      = resample(data.trial', newfsample, data.fsample);
-        assert(length(data.trialtime) == size(data.trial, 1), 'timeaxis does not match data');
-        
-        % resample timepoints: blinkoffset, saccoffset, stimonset
-        resample_points     = @(pts, oldfs, newfs) round(pts * (newfs/oldfs));
-        data.blinkoffset    = resample_points(data.blinkoffset, data.fsample, newfsample);
-        data.saccoffset     = resample_points(data.saccoffset, data.fsample, newfsample);
-        data.stimonset      = resample_points(data.stimonset, data.fsample, newfsample);
-        data.fsample        = newfsample;
-
-    end
 end % files
 end
 
@@ -192,7 +182,7 @@ blinkIdxRight           = ~cellfun(@isempty, regexp(t.CategoryRight, 'Blink'));
 blinkIdxBoth            = (blinkIdxLeft | blinkIdxRight);
 asc.dat(blinkIdxBoth, :) = NaN;
 
-% return blink offsets 
+% return blink offsets
 [~, ~, asc.blinkoffset] = runLengthEncode(double(blinkIdxBoth)');
 asc.blinkoffset(asc.blinkoffset > length(asc.dat)) = []; % remove offset idx at the end
 
@@ -200,7 +190,7 @@ saccIdxLeft             = ~cellfun(@isempty, regexp(t.CategoryLeft, 'Saccade'));
 saccIdxRight            = ~cellfun(@isempty, regexp(t.CategoryRight, 'Saccade'));
 saccIdxBoth             = (saccIdxLeft | saccIdxRight);
 
-% return blink offsets 
+% return blink offsets
 [~, ~, asc.saccoffset] = runLengthEncode(double(saccIdxBoth)');
 asc.saccoffset(asc.saccoffset > length(asc.dat)) = []; % remove offset idx at the end
 
@@ -233,5 +223,12 @@ for i = 1:height(t),
     event(i).time   = t.RecordingTime_ms_(i); % in seconds from start of recording
     event(i).value  = t.Content(i);
 end
+
+end
+
+function newTimeIdx_s = resample_points(pts, oldtimeaxis, newtimeaxis)
+
+oldTimeIdx_s = oldtimeaxis(pts);
+newTimeIdx_s = dsearchn(newtimeaxis, oldTimeIdx_s);
 
 end

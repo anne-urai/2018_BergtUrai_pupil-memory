@@ -4,34 +4,37 @@ global mypath
 addpath('~/Documents/fieldtrip/');
 ft_defaults;
 
+if ~exist('removeLuminance', 'var'), removeLuminance = 0; end
+
 %global mypath
 subjects    = 1:58;
 subjects(ismember(subjects, [13 14 20 51])) = [];
-% subjects    = 1:3;
+% subjects who didn't complete the study: 13, 14, 20 and 51
 
-keepPupilTimecourses = 1;
-quickTest   = 0;
-prestim     = 2;
-poststim    = 4;
-fsample     = 50; % massively speeds up deconvolution
+% how much of the pupil to read in and visualize?
+prestim         = 3;
+poststim        = 5;
+fsample         = 50; % massively speeds up deconvolution
+baselineRange   = [-2 0]; % what time to take for the baseline
+dilationRange   = [1 3]; % what time to take for the dilation? stimulus duration
 
 for sj = subjects
     
-    if exist(sprintf('%s/visual/P%02d_img.csv', mypath, sj), 'file'),
-       % continue;
+    if exist(sprintf('%s/data/P%02d_img.mat', mypath, sj), 'file'),
+        % continue;
     end
     
     %% ================================= %
     % BEHAVIOUR: ENCODING, PHASE 1
     %% ================================= %
     
-    behavfile = dir(sprintf('%s/behaviour/phase1/result/%d*_%s_*.xls', mypath, sj, 'img'));
+    behavfile = dir(sprintf('%s/data/behaviour/phase1/result/%d*_%s_*.xls', mypath, sj, 'img'));
     % subject numbers have single precision, filter
     behavfile = behavfile((~cellfun(@isempty, regexp({behavfile(:).name}, sprintf('^%d[a-z]', sj))))).name;
-    dat = readtable(sprintf('%s/behaviour/phase1/result/%s', mypath, behavfile));
+    dat = readtable(sprintf('%s/data/behaviour/phase1/result/%s', mypath, behavfile));
     
     % rename some variables
-    dat.Properties.VariableNames{'Trialnummer'}        = 'trialnr';
+    dat.Properties.VariableNames{'Trialnummer'}        = 'trialnr_enc';
     dat.Properties.VariableNames{'Bildnummer'}         = 'image';
     dat.Properties.VariableNames{'Emotionalit_tDesBildes_0_neutral_1_emotional_'}        = 'emotional';
     dat.Properties.VariableNames{'AntwortEmotionsrating_von0_3_'}        = 'emotion_score';
@@ -42,73 +45,67 @@ for sj = subjects
     % PUPIL: ENCODING, PHASE 1
     %% ================================= %
     
-    if exist(sprintf('%s/pupil/%02d_d1_%s.txt', mypath, sj, 'img'), 'file'),
+    if exist(sprintf('%s/data/pupil/%02d_d1_%s.txt', mypath, sj, 'img'), 'file'),
         
-        pupil = processPupilData(sprintf('%s/pupil/%02d_d1_%s.txt', mypath, sj, 'img'), fsample);
+        pupil = processPupilData(sprintf('%s/data/pupil/%02d_d1_%s.txt', mypath, sj, 'img'), ...
+            fsample, prestim, poststim);
+        print(gcf, '-dpdf', sprintf('%s/preprocfigs/%02d_d1_img_readinpupil.pdf', mypath, sj));
         
         % remove blinks and saccades
         pupil.dat(:, 1) = blink_regressout(pupil.dat(:, 1), pupil.fsample, ...
-            [pupil.blinkoffset' pupil.blinkoffset'], [pupil.saccoffset' pupil.saccoffset'], 1, 1);
-        print(gcf, '-dpdf', regexprep(sprintf('%s/pupil/%02d_d1_%s.txt', mypath, sj, 'img'), '.txt', '_blinkregress.pdf'));
+            [pupil.blinkoffset pupil.blinkoffset], [pupil.saccoffset pupil.saccoffset], 1, 1);
+        print(gcf, '-dpdf', sprintf('%s/preprocfigs/%02d_d1_img_blinkregress.pdf', mypath, sj));
         
-        if quickTest,
-            pupil.dat(:, 4) = pupil.dat(:, 1);
-        else
-            % ESTIMATE IRF OF THE LIGHT RESPONSE USING DECONVOLUTION
-            if removeLuminance,
-                pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
-            else
-                pupil.dat(:, 4) = pupil.dat(:, 1);
-            end
+        % ESTIMATE IRF OF THE LIGHT RESPONSE USING DECONVOLUTION
+        if removeLuminance,
+            pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
             
+            % epoch pupil
+            pupil.trial_clean = nan(size(pupil.trial'));
+            pupil.trial       = nan(size(pupil.trial'));
+            
+            for t = 1:length(pupil.stimonset),
+                pupil.trial(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
+                    : pupil.stimonset(t) + poststim*pupil.fsample, 1);
+                pupil.trial_clean(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
+                    : pupil.stimonset(t) + poststim*pupil.fsample, 4);
+            end
+            pupil.trialtime = -prestim:1/pupil.fsample:poststim;
+            
+        else
+            pupil.dat(:, 4) = pupil.dat(:, 1);
         end
         pupil.label{4}  = 'cleanpupil';
-        
-        % epoch pupil
-        pupil.trial_clean = nan(size(pupil.trial'));
-        pupil.trial       = nan(size(pupil.trial'));
-        
-        for t = 1:length(pupil.stimonset),
-            pupil.trial(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
-                : pupil.stimonset(t) + poststim*pupil.fsample, 1);
-            pupil.trial_clean(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
-                : pupil.stimonset(t) + poststim*pupil.fsample, 4);
-        end
-        pupil.time = -prestim:1/pupil.fsample:poststim;
         
         %% ================================= %
         % MATCH PUPIL TO BEHAVIOURAL DATA
         %% ================================= %
         
-        dat.pupil_baseline_enc      = nanmean(pupil.trial_clean(:, (pupil.time > -2 & pupil.time < 0)), 2);
-        dat.pupil_dilation_enc      = nanmean(pupil.trial_clean(:, (pupil.time > 1 & pupil.time < 4)), 2);
-
-        if keepPupilTimecourses,
-            dat.pupil_timecourse_clean_enc  = pupil.trial_clean;
-            dat.pupil_timecourse_enc        = pupil.trial;
-        end
+        dat.pupil_baseline_enc      = nanmean(pupil.trial(:, ...
+            (pupil.trialtime > baselineRange(1) & pupil.trialtime < baselineRange(2))), 2);
+        dat.pupil_dilation_enc      = nanmean(pupil.trial(:, ...
+            (pupil.trialtime > dilationRange(1) & pupil.trialtime < dilationRange(2))), 2) - dat.pupil_baseline_enc;
+        dat.pupil_timecourse_enc        = pupil.trial;
+        
     else
         dat.pupil_baseline_enc = nan(size(dat.image));
         dat.pupil_dilation_enc = nan(size(dat.image));
         
-        if keepPupilTimecourses
-            pupil.time = -prestim: 1/fsample :poststim;
-            dat.pupil_timecourse_enc = nan(length(dat.image), length(pupil.time));
-            dat.pupil_timecourse_clean_enc = nan(length(dat.image), length(pupil.time));
-        end
+        pupil.time = -prestim: 1/fsample :poststim;
+        dat.pupil_timecourse_enc = nan(length(dat.image), length(pupil.time));
     end
     
     %% ================================= %
     % BEHAVIOUR: PHASE 2, RECOGNITION
     %% ================================= %
     
-    behavfile = dir(sprintf('%s/behaviour/phase2/result/%d*_%s_*.xls', mypath, sj, 'img'));
+    behavfile = dir(sprintf('%s/data/behaviour/phase2/result/%d*_%s_*.xls', mypath, sj, 'img'));
     % subject numbers have single precision, filter
     behavfile = behavfile((~cellfun(@isempty, regexp({behavfile(:).name}, sprintf('^%d[a-z]', sj))))).name;
-    dat2 = readtable(sprintf('%s/behaviour/phase2/result/%s', mypath, behavfile));
+    dat2 = readtable(sprintf('%s/data/behaviour/phase2/result/%s', mypath, behavfile));
     
     % rename some variables
-    dat2.Properties.VariableNames{'Trialnummer'}                            = 'trialnr';
+    dat2.Properties.VariableNames{'Trialnummer'}                            = 'trialnr_recog';
     dat2.Properties.VariableNames{'Bildnummer'}                             = 'image';
     dat2.Properties.VariableNames{'KorrekteAntwort_0_neu_1_alt_'}           = 'target_oldnew';
     dat2.Properties.VariableNames{'GegebeneAntwort_0_neu_1_alt_'}           = 'recog_oldnew';
@@ -127,67 +124,61 @@ for sj = subjects
     % PUPIL: RECOGNITION, PHASE 2
     %% ================================= %
     
-    if exist(sprintf('%s/pupil/%02d_d2_%s.txt', mypath, sj, 'img'), 'file'),
+    if exist(sprintf('%s/data/pupil/%02d_d2_%s.txt', mypath, sj, 'img'), 'file'),
         
-        pupil = processPupilData(sprintf('%s/pupil/%02d_d2_%s.txt', mypath, sj, 'img'), fsample);
+        pupil = processPupilData(sprintf('%s/data/pupil/%02d_d2_%s.txt', mypath, sj, 'img'), ...
+            fsample, prestim, poststim);
+        print(gcf, '-dpdf', sprintf('%s/preprocfigs/%02d_d2_img_readinpupil.pdf', mypath, sj));
         
         % regress out blinks
         pupil.dat(:, 1) = blink_regressout(pupil.dat(:, 1), pupil.fsample, ...
-            [pupil.blinkoffset' pupil.blinkoffset'], [pupil.saccoffset' pupil.saccoffset'], 1, 1);
-        print(gcf, '-dpdf', regexprep(sprintf('%s/pupil/%02d_d2_%s.txt', mypath, sj, 'img'), '.txt', '_blinkregress.pdf'));
+            [pupil.blinkoffset pupil.blinkoffset], [pupil.saccoffset pupil.saccoffset], 1, 1);
+        print(gcf, '-dpdf', sprintf('%s/preprocfigs/%02d_d2_img_blinkregress.pdf', mypath, sj));
         
-        if quickTest,
-            pupil.dat(:, 4) = pupil.dat(:, 1);
-        else
-            % ESTIMATE IRF OF THE LIGHT RESPONSE USING DECONVOLUTION
-            if removeLuminance,
-                pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
-            else
-                pupil.dat(:, 4) = pupil.dat(:, 1);
+        % ESTIMATE IRF OF THE LIGHT RESPONSE USING DECONVOLUTION
+        if removeLuminance,
+            pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
+            
+            % epoch pupil
+            pupil.trial_clean = nan(size(pupil.trial'));
+            pupil.trial       = nan(size(pupil.trial'));
+            
+            % epoch pupil
+            pupil.trial_clean = nan(size(pupil.trial));
+            for t = 1:length(pupil.stimonset),
+                pupil.trial(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
+                    : pupil.stimonset(t) + poststim*pupil.fsample, 1);
+                pupil.trial_clean(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
+                    : pupil.stimonset(t) + poststim*pupil.fsample, 4);
             end
+            pupil.trialtime = -prestim:1/pupil.fsample:poststim;
+            
+        else
+            pupil.dat(:, 4) = pupil.dat(:, 1);
+            pupil.label{4}  = 'cleanpupil';
         end
-        pupil.label{4}  = 'cleanpupil';
-        
-        % epoch pupil
-        pupil.trial_clean = nan(size(pupil.trial'));
-        pupil.trial       = nan(size(pupil.trial'));
-        
-        % epoch pupil
-        pupil.trial_clean = nan(size(pupil.trial));
-        for t = 1:length(pupil.stimonset),
-            pupil.trial(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
-                : pupil.stimonset(t) + poststim*pupil.fsample, 1);
-            pupil.trial_clean(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
-                : pupil.stimonset(t) + poststim*pupil.fsample, 4);
-        end
-        pupil.time = -prestim:1/pupil.fsample:poststim;
         
         %% ================================= %
         % MATCH PUPIL TO BEHAVIOURAL DATA
         %% ================================= %
         
-        dat2.pupil_baseline_recog      = nanmean(pupil.trial_clean(:, (pupil.time > -2 & pupil.time < 0)), 2);
-        dat2.pupil_dilation_recog      = nanmean(pupil.trial_clean(:, (pupil.time > 1 & pupil.time < 4)), 2);
-        if keepPupilTimecourses,
-            dat2.pupil_timecourse_clean_recog    = pupil.trial_clean;
-            dat2.pupil_timecourse_recog          = pupil.trial;
-        end
+        dat2.pupil_baseline_recog      = nanmean(pupil.trial(:, ...
+            (pupil.trialtime > baselineRange(1) & pupil.trialtime < baselineRange(2))), 2);
+        dat2.pupil_dilation_recog      = nanmean(pupil.trial(:, ...
+            (pupil.trialtime > dilationRange(1) & pupil.trialtime < dilationRange(2))), 2) - dat2.pupil_baseline_recog;
+        dat2.pupil_timecourse_recog    = pupil.trial;
     else
         dat2.pupil_baseline_recog = nan(size(dat2.image));
         dat2.pupil_dilation_recog = nan(size(dat2.image));
-        
-        if keepPupilTimecourses
-            pupil.time = -prestim: 1/fsample :poststim;
-            dat2.pupil_timecourse_clean_recog = nan(length(dat2.image), length(pupil.time));
-            dat2.pupil_timecourse_recog = nan(length(dat2.image), length(pupil.time));
-        end
+        pupil.time = -prestim: 1/fsample :poststim;
+        dat2.pupil_timecourse_recog = nan(length(dat2.image), length(pupil.time));
     end
     
     %% ================================= %
     % BEHAVIOUR: PHASE 2, RECALL
     %% ================================= %
     
-    dat3 = readtable(sprintf('%s/recall/%02d_Bilder.csv', mypath, sj));
+    dat3 = readtable(sprintf('%s/data/recall/%02d_Bilder.csv', mypath, sj));
     
     vars = dat3.Properties.VariableNames;
     for v = 1:length(vars),
@@ -243,25 +234,27 @@ for sj = subjects
     
     % do a few checks & clean up
     dat4 = removeDuplicateVars(dat4, {'confidence_recog', 'emotion_score', 'image', ...
-        'memory_score', 'recog_oldnew', 'recog_sdt','target_oldnew'});
+        'memory_score', 'recog_oldnew', 'recog_sdt', 'target_oldnew'});
+    dat4.subj_idx = sj*ones(size(dat4.image));
     
-    %% BASELINE CORRECTION
-    dat4.pupil_dilation_enc     = dat4.pupil_dilation_enc - dat4.pupil_baseline_enc;
-    dat4.pupil_dilation_recog   = dat4.pupil_dilation_recog - dat4.pupil_baseline_recog;
+    % reorder
+    dat4 = dat4(:, {'subj_idx', 'image', 'emotional', 'trialnr_enc', 'emotion_score', 'rt_emotion', ...
+        'pupil_baseline_enc', ...
+        'pupil_dilation_enc', 'recalled_d1', 'recalled_d2', ...
+        'target_oldnew', 'recog_oldnew', 'rt_recog', ...
+        'confidence_recog', 'rt_confidence_recog', 'pupil_baseline_recog', 'pupil_dilation_recog', ...
+        'memory_score', ...
+        'pupil_timecourse_enc', 'pupil_timecourse_recog'});
     
-    if keepPupilTimecourses
-        % save as a matfile with separate pupil and trialinfo
-        pupvars = strncmp(dat4.Properties.VariableNames', 'pupil', 5);
-        puptime = -prestim: 1/pupil.fsample :poststim;
-        pupil   = table2struct(dat4(:, pupvars), 'toscalar', true);
-        pupil.time = puptime;
-        
-        dat4(:, strncmp(dat4.Properties.VariableNames', 'pupil_timecourse', 16)) = [];
-        dat = dat4;
-        savefast(sprintf('%s/visual/P%02d_img.mat', mypath, sj), 'dat', 'pupil');
-    end
+    % save as a matfile with separate pupil and trialinfo
+    pupvars = strncmp(dat4.Properties.VariableNames', 'pupil', 5);
+    puptime = -prestim: 1/pupil.fsample :poststim;
+    pupil   = table2struct(dat4(:, pupvars), 'toscalar', true);
+    pupil.time = puptime;
     
-    writetable(dat4, sprintf('%s/visual/P%02d_img.csv', mypath, sj));
+    dat4(:, strncmp(dat4.Properties.VariableNames', 'pupil_timecourse', 16)) = [];
+    dat = dat4;
+    savefast(sprintf('%s/data/P%02d_img.mat', mypath, sj), 'dat', 'pupil');
     
 end
 
@@ -270,73 +263,39 @@ end
 % ===================== %
 
 disp('appending over subjects...');
+clearvars -except mypath subjects removeLuminance
 
+% separate out trialinfo and timecourses
 alltab = {};
-for sj = subjects,
-    thistab                 = readtable(sprintf('%s/visual/P%02d_img.csv', mypath, sj));
-    thistab.subj_idx        = sj*ones(size(thistab.image));
-    try thistab.filter_     = [];  end
-    alltab{sj}              = thistab;
+for sj = subjects
+    load(sprintf('%s/data/P%02d_img.mat', mypath, sj));
+    allpupil(sj)        = pupil;
+    alltab{sj}          = dat;
 end
+allpupil(cellfun(@isempty, alltab))     = [];
+alltab(cellfun(@isempty, alltab))       = [];
 
-alltab(cellfun(@isempty, alltab))   = [];
+% now append
 fulltab = cat(1, alltab{:});
 fulltab = fulltab(:, [end 1:end-1]);
+
+flds = fieldnames(allpupil(1));
+for f = 1:length(flds),
+    fullpupil.(flds{f}) = cat(1, allpupil(:).(flds{f}));
+end
+
+% save
+dat     = fulltab;
+pupil   = fullpupil;
+
 if removeLuminance,
-    writetable(fulltab, sprintf('%s/visual/alldata_img_luminanceRemoved.csv', mypath));
+    savefast(sprintf('%s/data/alldata_img_luminanceRemoved.mat', mypath), 'dat', 'pupil');
 else
-    writetable(fulltab, sprintf('%s/visual/alldata_img_raw.csv', mypath));
+    savefast(sprintf('%s/data/alldata_img_raw.mat', mypath), 'dat', 'pupil');
 end
 
-if keepPupilTimecourses,
-    % separate out trialinfo and timecourses
-    
-    alltab = {};
-    for sj = subjects
-        load(sprintf('%s/visual/P%02d_img.mat', mypath, sj));
-        dat.subj_idx        = sj*ones(size(dat.image));
-        try dat.filter_     = [];  end
-        allpupil(sj)        = pupil;
-        alltab{sj}          = dat;
-    end
-    allpupil(cellfun(@isempty, alltab))     = [];
-    alltab(cellfun(@isempty, alltab))       = [];
-    
-    % now append
-    try
-        fulltab = cat(1, alltab{:});
-        fulltab = fulltab(:, [end 1:end-1]);
-    catch
-        assert(1==0);
-    end
-    
-    flds = fieldnames(allpupil(1));
-    for f = 1:length(flds),
-        fullpupil.(flds{f}) = cat(1, allpupil(:).(flds{f}));
-    end
-    
-    % save
-    dat     = fulltab;
-    pupil   = fullpupil;
-    
-    if removeLuminance,
-        savefast(sprintf('%s/visual/alldata_img_luminanceRemoved.mat', mypath), 'dat', 'pupil');
-    else
-        savefast(sprintf('%s/visual/alldata_img_raw.mat', mypath), 'dat', 'pupil');
-    end
-end
-
-end
-
-function dat = removeDuplicateVars(dat, vars)
-
-for v = 1:length(vars),
-    v1 = [vars{v} '_dat3'];
-    v2 = [vars{v} '_dat4'];
-    
-    assert(isequaln(dat.(v1), dat.(v2)), 'mismatch');
-    dat.(v1) = [];
-    dat.Properties.VariableNames{v2} = vars{v};
+for sj = subjects,
+    delete(sprintf('%s/data/P%02d_img.mat', mypath, sj));
 end
 end
 
