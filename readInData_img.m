@@ -61,21 +61,12 @@ for sj = subjects
             pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
             
             % epoch pupil
-            pupil.trial_clean = nan(size(pupil.trial'));
-            pupil.trial       = nan(size(pupil.trial'));
-            
+            pupil.trial = nan(size(pupil.trial));
             for t = 1:length(pupil.stimonset),
                 pupil.trial(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
-                    : pupil.stimonset(t) + poststim*pupil.fsample, 1);
-                pupil.trial_clean(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
                     : pupil.stimonset(t) + poststim*pupil.fsample, 4);
             end
-            pupil.trialtime = -prestim:1/pupil.fsample:poststim;
-            
-        else
-            pupil.dat(:, 4) = pupil.dat(:, 1);
         end
-        pupil.label{4}  = 'cleanpupil';
         
         %% ================================= %
         % MATCH PUPIL TO BEHAVIOURAL DATA
@@ -85,7 +76,7 @@ for sj = subjects
             (pupil.trialtime > baselineRange(1) & pupil.trialtime < baselineRange(2))), 2);
         dat.pupil_dilation_enc      = nanmean(pupil.trial(:, ...
             (pupil.trialtime > dilationRange(1) & pupil.trialtime < dilationRange(2))), 2) - dat.pupil_baseline_enc;
-        dat.pupil_timecourse_enc        = pupil.trial;
+        dat.pupil_timecourse_enc    = pupil.trial;
         
     else
         dat.pupil_baseline_enc = nan(size(dat.image));
@@ -140,22 +131,11 @@ for sj = subjects
             pupil.dat(:, 4) = removeLightResponse(pupil.dat(:, 1), pupil.fsample, pupil.stimonset);
             
             % epoch pupil
-            pupil.trial_clean = nan(size(pupil.trial'));
-            pupil.trial       = nan(size(pupil.trial'));
-            
-            % epoch pupil
-            pupil.trial_clean = nan(size(pupil.trial));
+            pupil.trial       = nan(size(pupil.trial));
             for t = 1:length(pupil.stimonset),
                 pupil.trial(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
                     : pupil.stimonset(t) + poststim*pupil.fsample, 1);
-                pupil.trial_clean(t, :) = pupil.dat(pupil.stimonset(t) - prestim*pupil.fsample ...
-                    : pupil.stimonset(t) + poststim*pupil.fsample, 4);
             end
-            pupil.trialtime = -prestim:1/pupil.fsample:poststim;
-            
-        else
-            pupil.dat(:, 4) = pupil.dat(:, 1);
-            pupil.label{4}  = 'cleanpupil';
         end
         
         %% ================================= %

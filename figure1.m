@@ -10,8 +10,9 @@ piyg    = cbrewer('div', 'PiYG', 10);
 vars2plot = {'recalled_d1', 'recalled_d2', 'recog_oldnew', 'dprime', 'confidence_recog', 'pupil_dilation_enc'};
 for v = 1:length(vars2plot),
     
-    close all; subplot(441); hold on;
     for c = 1:length(conds),
+        
+        close all; subplot(441); hold on;
         
         % get the data
         load(sprintf('%s/data/alldata_%s.mat', mypath, conds{c}), 'dat');
@@ -61,50 +62,49 @@ for v = 1:length(vars2plot),
         end
         
         if pval < 0.001,
-            txt{c} = sprintf('%s\nt(%d) = %.2f, p < 0.001', legtxt, stats.df, stats.tstat);
+            txt = sprintf('t(%d) = %.2f\np < 0.001', stats.df, stats.tstat);
         else
-            txt{c} = sprintf('%s\nt(%d) = %.2f, p = %.3f', legtxt, stats.df, stats.tstat, pval);
+            txt = sprintf('t(%d) = %.2f\np = %.3f', stats.df, stats.tstat, pval);
         end
         
+        % layout of the plot
+        axis tight; xlims = get(gca, 'xlim'); ylims = get(gca, 'ylim');
+        newlims = [min([xlims ylims]) max([xlims ylims])];
+        xlim(newlims); ylim(newlims); axis square;
+        xtick = roundn(newlims, -1);
+        set(gca, 'xtick', unique([min(xtick) get(gca, 'xtick')]), ...
+            'ytick', unique([min(xtick) get(gca, 'xtick')]));
+        r = refline(1, 0); r.Color = 'k'; r.LineWidth = 0.5;
+        
+        % stats text
+        text(mean([mean(newlims), mean(newlims)]), ...
+            mean([min(newlims), min(newlims), mean(newlims)]), txt, 'fontsize', 4);
+        
+        % axes
+        xlabel('Neutral');
+        ylabel('Emotional');
+        set(gca, 'ycolor', rdgy(1, :));
+        set(gca, 'xcolor', rdgy(end, :));
+        set(gca, 'xtick', get(gca, 'ytick'));
+        
+        switch vars2plot{v}
+            case 'recalled_d1'
+                title('Fraction recalled, day 1');
+            case 'recalled_d2'
+                title('Fraction recalled, day 2');
+            case 'recog_oldnew'
+                title('Fraction recognized, day 2');
+            case 'dprime'
+                title('Recognition d''');
+            case 'confidence_recog'
+                title('Recognition confidence');
+            case 'pupil_dilation_enc'
+                title('Pupil response');
+        end
+        
+        offsetAxes; tightfig;
+        print(gcf, '-dpdf', sprintf('%s/figures/scatter_v%d_%s.pdf', mypath, v, conds{c}));
     end
-    
-    % layout of the plot
-    axis tight; xlims = get(gca, 'xlim'); ylims = get(gca, 'ylim');
-    newlims = [min([xlims ylims]) max([xlims ylims])];
-    xlim(newlims); ylim(newlims); axis square;
-    r = refline(1, 0); r.Color = 'k'; r.LineWidth = 0.5;
-    
-    % stats text
-    text(mean([min(newlims), mean(newlims), mean(newlims)]), ...
-        mean([min(newlims), min(newlims), mean(newlims)]), txt, 'fontsize', 4);
-    %lh = legend([ph{1}(1) ph{2}(1)], txt, 'location', 'southeast');
-    %lh.Box = 'off';
-    %lh.FontSize = 4;
-    
-    % axes
-    xlabel('Neutral');
-    ylabel('Emotional');
-    set(gca, 'ycolor', rdgy(1, :));
-    set(gca, 'xcolor', rdgy(end, :));
-    set(gca, 'xtick', get(gca, 'ytick'));
-    
-    switch vars2plot{v}
-        case 'recalled_d1'
-            title('Fraction recalled, day 1');
-        case 'recalled_d2'
-            title('Fraction recalled, day 2');
-        case 'recog_oldnew'
-            title('Fraction recognized, day 2');
-        case 'dprime'
-            title('Recognition d''');
-        case 'confidence_recog'
-            title('Recognition confidence');
-        case 'pupil_dilation_enc'
-            title('Pupil response');
-    end
-    
-    offsetAxes; tightfig;
-    print(gcf, '-dpdf', sprintf('%s/figures/scatter_v%d.pdf', mypath, v));
     
 end
 end
