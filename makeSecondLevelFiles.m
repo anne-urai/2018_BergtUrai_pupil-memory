@@ -55,6 +55,8 @@ for c = 1:length(conds),
         falseAlarmFun = @(x,y) nanmean(x(y==0));
         tmptab.([conds{c} '_recog_falsealarmrate_' emotionNames{e}]) = ...
             splitapply(falseAlarmFun, dat.recog_oldnew, dat.target_oldnew, gr);
+        tmptab.([conds{c} '_recog_dprime_' emotionNames{e}]) =  norminv( tmptab.([conds{c} '_recog_hitrate_' emotionNames{e}])) - ...
+           norminv(  tmptab.([conds{c} '_recog_falsealarmrate_' emotionNames{e}]) );
         
         % keep this all in for appending later
         allinfo{c, e} = tmptab;
@@ -64,9 +66,9 @@ end
 
 %% NOW APPEND IMAGES AND WORD DATA
 allimages   = join(allinfo{1, :});
-plotOverview(allimages, 'images');
 allwords    = join(allinfo{2, :});
-plotOverview(allwords, 'words');
+%plotOverview(allwords, 'words');
+%plotOverview(allimages, 'images');
 
 fulltab     = outerjoin(allimages, allwords, 'keys', {'subj_idx'});
 fulltab.subj_idx = fulltab.subj_idx_allimages;
@@ -78,13 +80,14 @@ spssdat = readtable(sprintf('%s/data/fromSPSS/pupilsandmemory_second_level.csv',
     'treatasempty', 'NA', 'readrownames', 0);
 spssdat.subj_idx = spssdat.VPN; % apparently this is the subject nr
 spssdat(:, {'Var1', 'VPN', 'VPNummer', 'filter__'}) = [];
-plotOverview(spssdat, 'spss');
+%plotOverview(spssdat, 'spss');
 
 alldatacombined = innerjoin(fulltab, spssdat, 'keys', {'subj_idx'});
 % excel cannot write a file that big... remove some crap!
 alldatacombined(:, {'sex','age','AkademikerIn','BMI','BDI','STAI_trait', ...
     'STAI_state_d1','STAI_state_d2','TICS_UEBE','TICS_SOUE','TICS_ERDR','TICS_UNZU', ...
-    'TICS_UEFO','TICS_MANG','TICS_SOZS','TICS_SOZI','TICS_SORG','TICS_SSCS'}) = [];
+    'TICS_UEFO','TICS_MANG','TICS_SOZS','TICS_SOZI','TICS_SORG','TICS_SSCS', ...
+    'word_sum_low','word_sum_low_dichotom', 'word_anzahl_neut','word_anzahl_neg'}) = [];
 writetable(alldatacombined, sprintf('%s/data/secondLevel_matlab_SPSS.xls', mypath));
 
 %% DO SOME SANITY CHECKS, confirm that the two datasets return more or less the same info
@@ -101,7 +104,27 @@ clf; corrplot(alldatacombined, {'words_recalled_d1_neut', 'words_recalled_d2_neu
 suplabel('Matlab', 'x'); suplabel('SPSS', 'y');
 print(gcf, '-dpdf', sprintf('%s/figures/correlationplot_comparison_recall_words.pdf', mypath));
 
-%% WRITE TO EXCEL FOR LARS
+clf; corrplot(alldatacombined, {'words_recog_hitrate_neut', 'words_recog_hitrate_neg', ...
+  'images_recog_hitrate_neut', 'images_recog_hitrate_neg'}, ...
+  {'word_hitrate_neut', 'word_hitrate_neg', 'pic_hitrate_neut', 'pic_hitrate_neg'});
+suplabel('Matlab', 'x'); suplabel('SPSS', 'y');
+print(gcf, '-dpdf', sprintf('%s/figures/correlationplot_comparison_recognition_hitrate.pdf', mypath));
+
+% LOGISTIC REGRESSION COEFFICIENTS
+clf; corrplot(alldatacombined, {'words_regression_pupil_recalled_d1_neut', 'words_regression_pupil_recalled_d1_neg', ...
+  'words_regression_pupil_recalled_d2_neut', 'words_regression_pupil_recalled_d2_neg'}, ...
+  {'word_regression_d1_recall_beta_neu', 'word_regression_d1_recall_beta_neg', ...
+  'word_regression_d2_recall_beta_neu', 'word_regression_d2_recall_beta_neg'});
+suplabel('Matlab', 'x'); suplabel('SPSS', 'y');
+print(gcf, '-dpdf', sprintf('%s/figures/correlationplot_comparison_logisticbetas.pdf', mypath));
+
+% PUPIL ITSELF
+clf; corrplot(alldatacombined, {'words_pupil_dilation_enc_neut', 'words_pupil_dilation_enc_neg', ...
+  'images_pupil_dilation_enc_neut', 'images_pupil_dilation_enc_neg'}, ...
+  {'word_pupil_d1_dilation_neut', 'word_pupil_d1_dilation_neg', ...
+  'pic_pupil_d1_dilation_neut', 'pic_pupil_d1_dilation_neg'});
+suplabel('Matlab', 'x'); suplabel('SPSS', 'y');
+print(gcf, '-dpdf', sprintf('%s/figures/correlationplot_comparison_pupil.pdf', mypath));
 
 end
 
