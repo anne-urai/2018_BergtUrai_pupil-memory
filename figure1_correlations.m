@@ -39,7 +39,7 @@ for v = 1:length(vars2plot),
         l       = lsline;
         l(1).LineWidth = 0.5;
         l(1).Color = 'k';
-        [r, pval] = corr(pupdiff, vardiff, 'rows', 'complete', 'type', 'pearson');
+        [r, pval] = corr(pupdiff, vardiff, 'rows', 'pairwise', 'type', 'pearson');
         txt{1} = sprintf('r = %.3f, p = %.3f', r, pval);
         
         %% also add the same datapoints from Anne Bergt's file
@@ -53,7 +53,12 @@ for v = 1:length(vars2plot),
         end
         
         pupdiff = spssdat.([cname '_pupil_d1_dilation_neg']) - spssdat.([cname '_pupil_d1_dilation_neut']);
-        pupdiff = spssdat.([cname '_diff_pupil_dilation_neut_neg']);
+        try
+            pupdiff = (spssdat.([cname '_diff_pupil_left_dilation_neut_neg']) + ...
+                spssdat.([cname '_diff_pupil_right_dilation_neut_neg'])) ./ 2;
+        catch
+            pupdiff = spssdat.([cname '_diff_pupil_dilation_neut_neg']);
+        end
         switch vars2plot{v}
             case 'recalled_d1'
                 vardiff = spssdat.([cname '_d1freerecall_neg']) - spssdat.([cname '_d1freerecall_neut']);
@@ -73,7 +78,7 @@ for v = 1:length(vars2plot),
         l(1).Color = 'k';
         l(2).Color = [0.3 0.7 0.3];
         
-        [r, pval] = corr(pupdiff, vardiff, 'rows', 'complete', 'type', 'pearson');
+        [r, pval] = corr(pupdiff, vardiff, 'rows', 'pairwise', 'type', 'pearson');
         txt{2} = sprintf('r = %.3f, p = %.3f', r, pval);
         
         xlabel({'Emotional vs. neutral' 'Pupil response (z)'});

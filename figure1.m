@@ -104,6 +104,45 @@ for v = 1:length(vars2plot),
         
         offsetAxes; tightfig;
         print(gcf, '-dpdf', sprintf('%s/figures/scatter_v%d_%s.pdf', mypath, v, conds{c}));
+        
+        %% also a good old barplot...
+        close all; subplot(441); hold on;
+        
+        %% plot this
+        close all; subplot(471); hold on;
+        plotdat.b = [avgdat.var(avgdat.emotional == 0), avgdat.var(avgdat.emotional == 1)];
+        plotBetasSwarm(plotdat.b, rdgy([end 1], :));
+        set(gca, 'xtick', 1:2, 'xticklabel', {'Neutral', 'Emotional'}, 'xticklabelrotation', -35);
+        [~, pval] = ttest(plotdat.b(:, 1), plotdat.b(:, 2));
+        mysigstar(gca, 1:2, max(get(gca, 'ylim')), pval, 'k', 'down');
+        
+        switch vars2plot{v}
+            case 'recalled_d1'
+                ylabel('Fraction recalled, day 1');
+            case 'recalled_d2'
+                ylabel('Fraction recalled, day 2');
+            case 'recog_oldnew'
+                ylabel('Fraction recognized, day 2');
+            case 'dprime'
+                ylabel('Recognition d''');
+            case 'confidence_recog'
+                ylabel('Recognition confidence');
+            case 'pupil_dilation_enc'
+                ylabel('Pupil response');
+        end
+        
+        tightfig;
+        xlim([0.7 2.3]);
+        switch c
+            case 1
+                ylim([0 0.8]); set(gca, 'ytick', 0:0.2:0.6);
+            case 2
+                ylim([0 0.6]); set(gca, 'ytick', 0:0.2:0.4);
+        end
+        offsetAxes;
+        print(gcf, '-dpdf', sprintf('%s/figures/scatter_v%d_%s_bar.pdf', mypath, v, conds{c}));
+        
+        
     end
     
 end
