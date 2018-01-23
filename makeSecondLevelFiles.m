@@ -88,7 +88,18 @@ alldatacombined(:, {'sex','age','AkademikerIn','BMI','BDI','STAI_trait', ...
 writetable(alldatacombined, sprintf('%s/data/secondLevel_matlab_SPSS.xls', mypath));
 
 %% DO SOME SANITY CHECKS, confirm that the two datasets return more or less the same info
-figure; corrplot(alldatacombined);
+
+figure; corrplot(alldatacombined, {'images_recalled_d1_neut', 'images_recalled_d2_neut', ...
+  'images_recalled_d1_neg', 'images_recalled_d2_neg'}, ...
+  {'pic_d1freerecall_neut', 'pic_d2freerecall_neut', 'pic_d1freerecall_neg', 'pic_d2freerecall_neg'});
+suplabel('Matlab', 'x'); suplabel('SPSS', 'y');
+print(gcf, '-dpdf', sprintf('%s/figures/correlationplot_comparison_recall_images.pdf', mypath));
+
+clf; corrplot(alldatacombined, {'words_recalled_d1_neut', 'words_recalled_d2_neut', ...
+  'words_recalled_d1_neg', 'words_recalled_d2_neg'}, ...
+  {'word_d1freerecall_neut', 'word_d2freerecall_neut', 'word_d1freerecall_neg', 'word_d2freerecall_neg'});
+suplabel('Matlab', 'x'); suplabel('SPSS', 'y');
+print(gcf, '-dpdf', sprintf('%s/figures/correlationplot_comparison_recall_words.pdf', mypath));
 
 %% WRITE TO EXCEL FOR LARS
 
