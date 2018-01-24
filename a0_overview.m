@@ -52,9 +52,9 @@ if 0,
     writetable(dat, sprintf('%s/data/alldata_images.xls', mypath));
     
 end
+
 %% MAKE SECOND LEVEL FILE!
 makeSecondLevelFiles;
-
 
 %% PLOT FIGURES
 pupilOverview_aud;
@@ -65,4 +65,5 @@ suppfigure1_emotionratings;
 figure2;
 logisticRegressionPlots;
 
+allBarPlots;
 

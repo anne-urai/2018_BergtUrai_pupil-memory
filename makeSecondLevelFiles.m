@@ -55,8 +55,8 @@ for c = 1:length(conds),
         falseAlarmFun = @(x,y) nanmean(x(y==0));
         tmptab.([conds{c} '_recog_falsealarmrate_' emotionNames{e}]) = ...
             splitapply(falseAlarmFun, dat.recog_oldnew, dat.target_oldnew, gr);
-        tmptab.([conds{c} '_recog_dprime_' emotionNames{e}]) =  norminv( tmptab.([conds{c} '_recog_hitrate_' emotionNames{e}])) - ...
-           norminv(  tmptab.([conds{c} '_recog_falsealarmrate_' emotionNames{e}]) );
+        tmptab.([conds{c} '_recog_dprime_' emotionNames{e}]) = ...
+            splitapply(@dprime, dat.target_oldnew, dat.recog_oldnew, gr);
         
         % keep this all in for appending later
         allinfo{c, e} = tmptab;
