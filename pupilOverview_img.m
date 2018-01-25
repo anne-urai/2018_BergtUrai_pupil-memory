@@ -26,7 +26,7 @@ for baselineCorrect = [1]
     % 2. EMOTIONAL VS NEUTRAL PICTURES
     close all; subplot(441); hold on;
     h = plotData(pupil.time, pupil.pupil_timecourse_enc, dat, {'subj_idx', 'emotional'}, rdgy([end 2], :));
-   % title('Memory encoding: images');
+    title('Memory encoding: images');
     lh = betterLegend(h, {'Neutral', 'Emotional'}, 'image');
     lh.Visible = 'off';
     print(gcf, '-dpdf', sprintf('%s/figures/images_bl%d_v1.pdf', mypath, baselineCorrect));
@@ -47,7 +47,7 @@ for baselineCorrect = [1]
     close all; subplot(441); hold on;
     h = plotData(pupil.time, pupil.pupil_timecourse_enc, ...
         dat, {'subj_idx', 'emotional', 'recalled_d1'}, rdgy([end-4 end 4 1], :), rdgy([end 1], :));
-   % title('Recall, day 1');
+    % title('Recall, day 1');
     %title('Memory encoding: images');
     betterLegend(h, {'Neutral, forgotten','Neutral, recalled', 'Emotional, forgotten',  'Emotional, recalled'}, 'image');
     print(gcf, '-dpdf', sprintf('%s/figures/images_bl%d_v3.pdf', mypath, baselineCorrect));
@@ -55,7 +55,7 @@ for baselineCorrect = [1]
     close all; subplot(441); hold on;
     h = plotData(pupil.time, pupil.pupil_timecourse_enc, ...
         dat, {'subj_idx', 'emotional', 'recalled_d2'}, rdgy([end-4 end  4 1], :), rdgy([end 1], :));
-   % title('Recall, day 2');
+    % title('Recall, day 2');
     betterLegend(h, {'Neutral, forgotten', 'Neutral, recalled', 'Emotional, forgotten', 'Emotional, recalled'}, 'image');
     print(gcf, '-dpdf', sprintf('%s/figures/images_bl%d_v4.pdf', mypath, baselineCorrect));
     
@@ -79,7 +79,7 @@ for baselineCorrect = [1]
     title('Recognition confidence, day 2 - emotional');
     betterLegend(h, {'0', '1', '2', '3'}, 'image');
     print(gcf, '-dpdf', sprintf('%s/figures/images_bl%d_v6.pdf', mypath, baselineCorrect));
-  
+    
 end
 end
 

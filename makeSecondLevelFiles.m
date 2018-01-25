@@ -62,6 +62,16 @@ for c = 1:length(conds),
         allinfo{c, e} = tmptab;
         toc;
     end
+    
+    %% LOGISTIC REGRESSION WITHOUT EMOTION, EMAIL LARS 25TH
+    dat = readtable(sprintf('%s/data/alldata_%s.csv', mypath, conds{c}));
+    [gr, sjidx] = findgroups(dat.subj_idx);
+    % 1. logistic regression of pupil onto recall
+    avgflds = {'recalled_d1', 'recalled_d2', 'recog_oldnew'};
+    for f = 1:length(avgflds),
+        allinfo{c, e}.([conds{c} '_regression_pupil_' avgflds{f}]) = ...
+            splitapply(@logresfun, dat.(avgflds{f}), dat.pupil_dilation_enc, gr);
+    end
 end
 
 %% NOW APPEND IMAGES AND WORD DATA
@@ -84,11 +94,11 @@ spssdat(:, {'Var1', 'VPN', 'VPNummer', 'filter__'}) = [];
 
 alldatacombined = innerjoin(fulltab, spssdat, 'keys', {'subj_idx'});
 % excel cannot write a file that big... remove some crap!
-alldatacombined(:, {'sex','age','AkademikerIn','BMI','BDI','STAI_trait', ...
-    'STAI_state_d1','STAI_state_d2','TICS_UEBE','TICS_SOUE','TICS_ERDR','TICS_UNZU', ...
-    'TICS_UEFO','TICS_MANG','TICS_SOZS','TICS_SOZI','TICS_SORG','TICS_SSCS', ...
-    'word_sum_low','word_sum_low_dichotom', 'word_anzahl_neut','word_anzahl_neg'}) = [];
-writetable(alldatacombined, sprintf('%s/data/secondLevel_matlab_SPSS.xls', mypath));
+% alldatacombined(:, {'sex','age','AkademikerIn','BMI','BDI','STAI_trait', ...
+%     'STAI_state_d1','STAI_state_d2','TICS_UEBE','TICS_SOUE','TICS_ERDR','TICS_UNZU', ...
+%     'TICS_UEFO','TICS_MANG','TICS_SOZS','TICS_SOZI','TICS_SORG','TICS_SSCS', ...
+%     'word_sum_low','word_sum_low_dichotom', 'word_anzahl_neut','word_anzahl_neg'}) = [];
+% writetable(alldatacombined, sprintf('%s/data/secondLevel_matlab_SPSS.xls', mypath));
 
 %% DO SOME SANITY CHECKS, confirm that the two datasets return more or less the same info
 
