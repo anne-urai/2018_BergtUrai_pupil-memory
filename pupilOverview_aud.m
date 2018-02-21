@@ -12,6 +12,37 @@ for baselineCorrect = [1],
         pupil.pupil_timecourse_enc = pupil.pupil_timecourse_enc - pupil.pupil_baseline_enc;
     end
     
+    
+    % ========================================================= %
+    % CONSOLIDATION
+    % ========================================================= %
+    
+    dat.recall_score = zeros(size(dat.recalled_d1));
+    dat.recall_score(dat.recalled_d1 == 0 & dat.recalled_d2 == 0)   = 0; % neither
+    dat.recall_score(dat.recalled_d1 == 1 & dat.recalled_d2 == 0)   = 1; % only d1
+    dat.recall_score(dat.recalled_d1 == 0 & dat.recalled_d2 == 1)   = 2; % only d2
+    dat.recall_score(dat.recalled_d1 == 1 & dat.recalled_d2 == 1)   = 3; % both
+    dat.consolidation = nan(size(dat.recall_score));
+    dat.consolidation(dat.recall_score == 1) = 0;
+    dat.consolidation(dat.recall_score == 3) = 1;
+    
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 0,:), ...
+        dat(dat.emotional == 0,:), {'subj_idx', 'consolidation'}, rdgy([end-3 end], :));
+    title('Neutral, consolidation');
+    betterLegend(h, {'d1', 'both'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v7.pdf', mypath, baselineCorrect));
+    
+    close all; subplot(441); hold on;
+    h = plotData(pupil.time, pupil.pupil_timecourse_enc(dat.emotional == 1,:), ...
+        dat(dat.emotional == 1,:), {'subj_idx',  'consolidation'}, rdgy([4 1], :));
+    title('Emotional, consolidation');
+    betterLegend(h, {'d1', 'both'}, 'word');
+    print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v8.pdf', mypath, baselineCorrect));
+    
+    % skip the rest
+    continue;
+    
     % ========================================================= %
     % Hypothesis 1: The pupil dilates more when being confronted with emotional (vs. neutral) material.
     % ========================================================= %
@@ -66,6 +97,7 @@ for baselineCorrect = [1],
     title('Recognition confidence, day 2 - emotional');
     betterLegend(h, {'0', '1', '2', '3'}, 'word');
     print(gcf, '-dpdf', sprintf('%s/figures/words_bl%d_v6.pdf', mypath, baselineCorrect));
+    
     
 end
 

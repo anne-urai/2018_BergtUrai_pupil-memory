@@ -23,6 +23,6 @@ end
 lh.Box = 'off';
 lh.EdgeColor = 'none'; 
 lh.FontSize = 4;
-lh.Visible = 'off';
+lh.Visible = 'on';
 
 end

@@ -6,7 +6,7 @@ conds       = {'img_raw', 'aud'};
 mrks        = {'o', 'd'};
 rdgy        = cbrewer('div', 'RdBu', 15); rdgy = rdgy([ end-1 2], :);
 rdgy_scat   = cbrewer('div', 'RdBu', 15); rdgy_scat = rdgy_scat([end-4 5], :);
-vars2split  = {'recalled_d1', 'recalled_d2', 'recog_oldnew'};
+vars2split  = {'recalled_d1', 'recalled_d2', 'recog_oldnew', 'consolidation'};
 
 whichStat = 'ttest';
 
@@ -20,6 +20,16 @@ for v = 1:length(vars2split),
             % get the data
             load(sprintf('%s/data/alldata_%s.mat', mypath, conds{c}), 'dat');
             dat = dat(dat.emotional == emotions(e), :);
+            
+            %% FIRST, CHECK THE RECALL DATA
+            dat.recall_score = zeros(size(dat.recalled_d1));
+            dat.recall_score(dat.recalled_d1 == 0 & dat.recalled_d2 == 0)   = 0; % neither
+            dat.recall_score(dat.recalled_d1 == 1 & dat.recalled_d2 == 0)   = 1; % only d1
+            dat.recall_score(dat.recalled_d1 == 0 & dat.recalled_d2 == 1)   = 2; % only d2
+            dat.recall_score(dat.recalled_d1 == 1 & dat.recalled_d2 == 1)   = 3; % both
+            dat.consolidation = nan(size(dat.recall_score));
+            dat.consolidation(dat.recall_score == 1) = 0;
+            dat.consolidation(dat.recall_score == 3) = 1;
             
             % do a logistic regression of pupil onto the outcome
             b = splitapply(@logresfun, dat.(vars2split{v}), dat.pupil_dilation_enc, findgroups(dat.subj_idx));
@@ -52,7 +62,7 @@ for v = 1:length(vars2split),
                     mysigstar(gca, e, max(get(gca, 'ylim')), permtest(plotdat.b(:, e)));
                 case 'ttest'
                     [~, pval] = ttest(plotdat.b(:, e));
-                    mysigstar(gca, e, max(get(gca, 'ylim')), pval);
+                    % mysigstar(gca, e, max(get(gca, 'ylim')), pval);
             end
         end
         
@@ -69,7 +79,7 @@ for v = 1:length(vars2split),
                 mysigstar(gca, 1:2, 0.9*min(get(gca, 'ylim')), permtest(plotdat.b(:,1), plotdat.b(:, 2)), 'k', 'up');
             case 'ttest'
                 [~, pval] = ttest(plotdat.b(:, 1), plotdat.b(:, 2));
-                mysigstar(gca, 1:2, 0.9*min(get(gca, 'ylim')), pval, 'k', 'up');
+                %  mysigstar(gca, 1:2, 0.9*min(get(gca, 'ylim')), pval, 'k', 'up');
         end
         
         switch vars2split{v}
@@ -79,6 +89,8 @@ for v = 1:length(vars2split),
                 ylabel({'Recall day 2' 'Logistic regression weights'});
             case 'recog_oldnew'
                 ylabel({'Recognition day 2' 'Logistic regression weights'});
+            case 'consolidation'
+                ylabel({'Recognition day 1 vs. both' 'Logistic regression weights'});
         end
         
         tightfig;
