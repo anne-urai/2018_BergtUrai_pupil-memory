@@ -52,8 +52,11 @@ for c = 1:2,
     set(gcf, 'defaultaxescolororder', colors([9 1 2], :), ...
         'defaultfigurecolormap', colors([9 1 2], :), 'defaultaxesfontsize', 4);
     colormap(colors([9 1 2], :));
-    corrplot(dat, personalityVars, memoryVars);
-    tightfig;
+    corrplot(dat, personalityVars, memoryVars, [], crit_p);
+    % tightfig;
+    
+    % rename the axes
+    
     
     print(gcf, '-dpdf', sprintf('%s/figures/personality_correlation_%s.pdf', mypath, conds{c}));
     
