@@ -1,6 +1,8 @@
 
 ### Bergt A, Urai AE, Donner TH, Schwabe L (2018) _Reading memory formation from the eyes_. bioRxiv:268490. ###
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1246101.svg)](http://doi.org/10.5281/zenodo.1246100)
+
 This repository contains
 ```
 ├─ code                 # all matlab code to run the analyses
