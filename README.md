@@ -30,5 +30,6 @@ In a0_overview.m, change mypath to the place where all the data are stored. This
 ```
 Then run `a0_overview.m` to preprocess the pupil data, run analyses and generate figure panels.
 
-A permanent doi is at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1246101.svg)](http://doi.org/10.5281/zenodo.1246100)
+A permanent doi is at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1246101.svg)](http://doi.org/10.5281/zenodo.1246100).
+
 *If you have any questions, open an issue or get in touch @AnneEUrai / anne.urai@gmail.com.*
