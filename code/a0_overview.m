@@ -30,11 +30,12 @@ set(groot, 'defaultaxesfontsize', 7, 'defaultaxestitlefontsizemultiplier', 1, ..
 % where is the data stored?
 global mypath
 mypath = '~/Data/pupil-memory';
+mypath = '~/Documents/code/2018_EJN_BergtUrai_pupil-memory';
 
 %% ONLY RUN THIS TO READ IN FROM THE RAW DATA TO FIRST-LEVEL FILES
 %% As a reminder: Word number 98 has to be removed from the analysis, because
 % there are two words that are labelled "98". There is no data for word number 218.
-readInData_aud;
+%readInData_aud;
 
 % without removing the luminance fluctuations
 readInData_img(0);

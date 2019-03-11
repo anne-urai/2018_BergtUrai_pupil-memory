@@ -13,7 +13,7 @@ for c = 1:length(conds),
         
         tic;
         % GET THE RIGHT DATA
-        dat = readtable(sprintf('%s/data/alldata_%s.csv', mypath, conds{c}));
+        dat = readtable(sprintf('%s/data/alldata_%s.xls', mypath, conds{c}));
         dat = dat(dat.emotional == emotions(e), :);
         [gr, sjidx] = findgroups(dat.subj_idx);
         tmptab = array2table([sjidx ], 'variablenames', {'subj_idx'});
@@ -64,7 +64,7 @@ for c = 1:length(conds),
     end
     
     %% LOGISTIC REGRESSION WITHOUT EMOTION, EMAIL LARS 25TH
-    dat = readtable(sprintf('%s/data/alldata_%s.csv', mypath, conds{c}));
+    dat = readtable(sprintf('%s/data/alldata_%s.xls', mypath, conds{c}));
     [gr, sjidx] = findgroups(dat.subj_idx);
     % 1. logistic regression of pupil onto recall
     avgflds = {'recalled_d1', 'recalled_d2', 'recog_oldnew'};
@@ -83,14 +83,14 @@ allwords    = join(allinfo{2, :});
 fulltab     = outerjoin(allimages, allwords, 'keys', {'subj_idx'});
 fulltab.subj_idx = fulltab.subj_idx_allimages;
 fulltab(:, {'subj_idx_allwords', 'subj_idx_allimages'}) = [];
-writetable(fulltab, sprintf('%s/data/secondLevel_matlab.xls', mypath));
+writetable(fulltab, sprintf('%s/data/second_level/secondLevel_matlab.xls', mypath));
 
 %% THEN MERGE WITH ANNE BERGT'S SPSS FILE!
-spssdat = readtable(sprintf('%s/data/fromSPSS/pupilsandmemory_second_level.csv', mypath), ...
+spssdat = readtable(sprintf('%s/data/second_level/fromSPSS/pupilsandmemory_second_level.csv', mypath), ...
     'treatasempty', 'NA', 'readrownames', 0);
 spssdat.subj_idx = spssdat.VPN; % apparently this is the subject nr
 spssdat(:, {'Var1', 'VPN', 'VPNummer', 'filter__'}) = [];
-%plotOverview(spssdat, 'spss');
+% plotOverview(spssdat, 'spss');
 
 alldatacombined = innerjoin(fulltab, spssdat, 'keys', {'subj_idx'});
 % excel cannot write a file that big... remove some crap!
@@ -98,7 +98,7 @@ alldatacombined = alldatacombined(:, cat(2, fulltab.Properties.VariableNames, ..
     {'sex','age','AkademikerIn','BMI','BDI','STAI_trait', ...
     'STAI_state_d1','STAI_state_d2','TICS_UEBE','TICS_SOUE','TICS_ERDR','TICS_UNZU', ...
     'TICS_UEFO','TICS_MANG','TICS_SOZS','TICS_SOZI','TICS_SORG','TICS_SSCS'}));
-writetable(alldatacombined, sprintf('%s/data/secondLevel_matlab_SPSS.xls', mypath));
+writetable(alldatacombined, sprintf('%s/data/second_level/secondLevel_matlab_SPSS.xls', mypath));
 
 %% DO SOME SANITY CHECKS, confirm that the two datasets return more or less the same info
 figure; corrplot(alldatacombined, {'images_recalled_d1_neut', 'images_recalled_d2_neut', ...

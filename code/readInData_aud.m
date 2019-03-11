@@ -15,7 +15,7 @@ prestim         = 3;
 poststim        = 5;
 fsample         = 50; % massively speeds up deconvolution
 baselineRange   = [-2 0]; % what time to take for the baseline
-dilationRange   = [1 3]; % what time to take for the dilation? stimulus duration
+dilationRange   = [1 8]; % what time to take for the dilation? stimulus duration
 
 for sj = subjects,
     
@@ -137,7 +137,7 @@ for sj = subjects,
         dat3.Properties.VariableNames{vars{v}} = regexprep(vars{v}, '_*', '_');
     end
     
-    dat3.Properties.VariableNames{'x_Wortnummer'}                   = 'word';
+    dat3.Properties.VariableNames{'Wortnummer'}                     = 'word';
     dat3.Properties.VariableNames{'Emotionalit_t_des_Wortes'}       = 'emotional';
     dat3.Properties.VariableNames{'d1_free_recall_remembered'}      = 'recalled_d1';
     dat3.Properties.VariableNames{'d2_free_recall_remembered'}      = 'recalled_d2';
