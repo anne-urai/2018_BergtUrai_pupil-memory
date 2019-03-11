@@ -1,0 +1,7 @@
+
+global mypath
+
+%% words
+
+load(sprintf('%s/data/alldata_%s.mat', mypath, 'aud'));
+writetable(
