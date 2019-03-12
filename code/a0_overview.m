@@ -25,7 +25,8 @@
 %% make sure to add the code path
 set(groot, 'defaultaxesfontsize', 7, 'defaultaxestitlefontsizemultiplier', 1, ...
     'defaultaxestitlefontweight', 'bold', ...
-    'defaultfigurerenderermode', 'manual', 'defaultfigurerenderer', 'painters');
+    'defaultfigurerenderermode', 'manual', 'defaultfigurerenderer', 'painters', ...
+    'DefaultFigureWindowStyle','docked');
 
 % where is the data stored?
 global mypath

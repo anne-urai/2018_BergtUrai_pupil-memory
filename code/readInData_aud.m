@@ -13,7 +13,7 @@ subjects(ismember(subjects, [13 14 20 51 34])) = [];
 % how much of the pupil to read in and visualize?
 prestim         = 3;
 poststim        = 10;
-fsample         = 50; % massively speeds up deconvolution
+fsample         = 250; % massively speeds up deconvolution
 baselineRange   = [-2 0]; % what time to take for the baseline
 dilationRange   = [1 3]; % what time to take for the dilation? stimulus duration
 
